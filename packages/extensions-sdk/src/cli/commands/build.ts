@@ -11,7 +11,7 @@ import styles from 'rollup-plugin-styles';
 import vue from 'rollup-plugin-vue';
 import { EXTENSION_PKG_KEY, EXTENSION_TYPES, APP_SHARED_DEPS, API_SHARED_DEPS } from '@directus/shared/constants';
 import { isAppExtension, isExtension, validateExtensionManifest } from '@directus/shared/utils';
-import { ExtensionManifestRaw } from '@directus/shared/types';
+import { ExtensionManifestRaw, ExtensionType } from '@directus/shared/types';
 import log from '../utils/logger';
 import { getLanguageFromPath, isLanguage } from '../utils/languages';
 import { Language } from '../types';
@@ -65,12 +65,10 @@ export default async function build(options: BuildOptions): Promise<void> {
 		process.exit(1);
 	}
 
-	const isApp = isAppExtension(type);
-
 	const spinner = ora('Building Directus extension...').start();
 
-	const rollupOptions = getRollupOptions(isApp, language, input);
-	const rollupOutputOptions = getRollupOutputOptions(isApp, output);
+	const rollupOptions = getRollupOptions(type, language, input);
+	const rollupOutputOptions = getRollupOutputOptions(type, output);
 
 	const bundle = await rollup(rollupOptions);
 
@@ -81,8 +79,8 @@ export default async function build(options: BuildOptions): Promise<void> {
 	spinner.succeed('Done');
 }
 
-function getRollupOptions(isApp: boolean, language: Language, input: string): RollupOptions {
-	if (isApp) {
+function getRollupOptions(type: ExtensionType, language: Language, input: string): RollupOptions {
+	if (isAppExtension(type)) {
 		if (language === 'javascript') {
 			return {
 				input,
@@ -126,8 +124,8 @@ function getRollupOptions(isApp: boolean, language: Language, input: string): Ro
 	}
 }
 
-function getRollupOutputOptions(isApp: boolean, output: string): RollupOutputOptions {
-	if (isApp) {
+function getRollupOutputOptions(type: ExtensionType, output: string): RollupOutputOptions {
+	if (isAppExtension(type)) {
 		return {
 			file: output,
 			format: 'es',

@@ -4,11 +4,14 @@ import fse from 'fs-extra';
 import execa from 'execa';
 import ora from 'ora';
 import { EXTENSION_TYPES, EXTENSION_PKG_KEY } from '@directus/shared/constants';
-import { isExtension } from '@directus/shared/utils';
+import { isAppExtension, isExtension } from '@directus/shared/utils';
+import { ExtensionType } from '@directus/shared/types';
 import log from '../utils/logger';
 import { isLanguage, languageToShort } from '../utils/languages';
 import renameMap from '../utils/rename-map';
 import { LANGUAGES } from '../constants';
+import { Language } from '../types';
+import getPackageVersion from '../utils/get-package-version';
 
 const pkg = require('../../../../package.json');
 
@@ -77,9 +80,7 @@ export default async function create(type: string, name: string, options: Create
 		scripts: {
 			build: 'directus-extension build',
 		},
-		devDependencies: {
-			'@directus/extensions-sdk': pkg.version,
-		},
+		devDependencies: await getPackageDeps(type, options.language),
 	};
 
 	await fse.writeJSON(path.join(targetPath, 'package.json'), packageManifest, { spaces: '\t' });
@@ -95,4 +96,33 @@ Build your extension by running:
   ${chalk.blue('cd')} ${name}
   ${chalk.blue('npm run')} build
 	`);
+}
+
+async function getPackageDeps(type: ExtensionType, language: Language) {
+	if (isAppExtension(type)) {
+		if (language === 'javascript') {
+			return {
+				'@directus/extensions-sdk': pkg.version,
+				vue: `^${await getPackageVersion('vue', 'next')}`,
+			};
+		} else {
+			return {
+				'@directus/extensions-sdk': pkg.version,
+				typescript: `^${await getPackageVersion('typescript')}`,
+				vue: `^${await getPackageVersion('vue', 'next')}`,
+			};
+		}
+	} else {
+		if (language === 'javascript') {
+			return {
+				'@directus/extensions-sdk': pkg.version,
+			};
+		} else {
+			return {
+				'@directus/extensions-sdk': pkg.version,
+				'@types/node': `^${await getPackageVersion('@types/node')}`,
+				typescript: `^${await getPackageVersion('typescript')}`,
+			};
+		}
+	}
 }
