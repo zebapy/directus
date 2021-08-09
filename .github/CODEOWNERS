@@ -7,5 +7,5 @@
 /packages/gatsby-source-directus @WoLfulus
 
 /packages/shared @nickrum
-/packages/extension-sdk @nickrum
+/packages/extensions-sdk @nickrum
 /app/vite.config.js @nickrum
