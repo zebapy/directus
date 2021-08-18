@@ -6,4 +6,3 @@ export {
 	defineHook,
 	defineEndpoint,
 } from '@directus/shared/utils';
-export { useLayoutState } from '@directus/shared/composables';
