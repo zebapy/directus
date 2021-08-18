@@ -7,34 +7,18 @@ import MapActions from './actions.vue';
 import { useI18n } from 'vue-i18n';
 import { toRefs, computed, ref, watch, Ref } from 'vue';
 
-import { CameraOptions, AnyLayer } from 'maplibre-gl';
-import { GeometryOptions, toGeoJSON } from '@/utils/geometry';
+import { toGeoJSON } from '@/utils/geometry';
 import { layers } from './style';
 import { useRouter } from 'vue-router';
+import useSync from '@/composables/use-sync';
+import { LayoutOptions, LayoutQuery } from './types';
 import { Filter } from '@directus/shared/types';
 import useCollection from '@/composables/use-collection/';
 import useItems from '@/composables/use-items';
 import { getFieldsFromTemplate } from '@/utils/get-fields-from-template';
-import type { Field, GeometryFormat } from '@directus/shared/types';
+import { Field, GeometryFormat, GeometryOptions } from '@directus/shared/types';
 
 import { cloneDeep, merge } from 'lodash';
-
-type LayoutQuery = {
-	fields: string[];
-	sort: string;
-	limit: number;
-	page: number;
-};
-
-type LayoutOptions = {
-	cameraOptions?: CameraOptions & { bbox: any };
-	customLayers?: Array<AnyLayer>;
-	geometryFormat?: GeometryFormat;
-	geometryField?: string;
-	fitDataToView?: boolean;
-	clusterData?: boolean;
-	animateOptions?: any;
-};
 
 export default defineLayout<LayoutOptions, LayoutQuery>({
 	id: 'map',
@@ -47,11 +31,18 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 		sidebar: MapSidebar,
 		actions: MapActions,
 	},
-	setup(props) {
+	setup(props, { emit }) {
 		const { t, n } = useI18n();
+
 		const router = useRouter();
 
-		const { collection, searchQuery, selection, layoutOptions, layoutQuery, filters } = toRefs(props);
+		const selection = useSync(props, 'selection', emit);
+		const layoutOptions = useSync(props, 'layoutOptions', emit);
+		const layoutQuery = useSync(props, 'layoutQuery', emit);
+		const filters = useSync(props, 'filters', emit);
+		const searchQuery = useSync(props, 'searchQuery', emit);
+
+		const { collection } = toRefs(props);
 		const { info, primaryKeyField, fields: fieldsInCollection } = useCollection(collection);
 
 		const page = syncOption(layoutQuery, 'page', 1);
@@ -175,7 +166,7 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 
 		const geojson = ref<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
 		const geojsonBounds = ref<GeoJSON.BBox>();
-		const geojsonError = ref<string | null>();
+		const geojsonError = ref<string | null>(null);
 		const geojsonLoading = ref(false);
 
 		watch(
@@ -260,7 +251,7 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 		}
 
 		const featureId = computed(() => {
-			return props.readonly ? null : primaryKeyField.value?.field;
+			return props.readonly ? null : primaryKeyField.value?.field ?? null;
 		});
 
 		function handleClick(key: number | string) {
@@ -298,7 +289,6 @@ export default defineLayout<LayoutOptions, LayoutQuery>({
 
 		return {
 			template,
-			selection,
 			geojson,
 			directusSource,
 			directusLayers,
